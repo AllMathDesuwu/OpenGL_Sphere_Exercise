@@ -1,0 +1,5 @@
+﻿  Main.cpp
+C:\Users\digim\Desktop\Other\OpenGL Progress\OpenGL_Spheres\Main.cpp(186,13): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\digim\Desktop\Other\OpenGL Progress\OpenGL_Spheres\Main.cpp(190,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\digim\Desktop\Other\OpenGL Progress\OpenGL_Spheres\Main.cpp(267,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  OpenGL_Spheres.vcxproj -> C:\Users\digim\Desktop\Other\OpenGL Progress\OpenGL_Spheres\x64\Debug\OpenGL_Spheres.exe
