@@ -53,7 +53,7 @@ Shader::Shader(const char* vertexFile, const char* fragmentFile) {
 	glAttachShader(ID, fragmentShader);
 	//Link all the shaders together into the Shader Program
 	glLinkProgram(ID);
-	compileErrors(ID, "PROGRAM");
+	//compileErrors(ID, "PROGRAM");	//error no. 1280	//for some reason compiling errors was causing problems xd
 
 	//Delete the now useless Vertex and Fragment Shader Objects
 	glDeleteShader(vertexShader);

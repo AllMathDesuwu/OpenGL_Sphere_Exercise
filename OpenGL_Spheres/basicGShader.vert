@@ -5,9 +5,7 @@ layout (location = 2) in vec3 aColor;
 layout (location = 3) in vec2 aTex;
 
 out vec3 curPos;
-out vec3 Normal;
-out vec3 color;
-out vec2 texCoord;
+out vec3 normal;
 
 out vec2 pass_xz;
 
@@ -17,12 +15,10 @@ uniform mat3 normalMatrix;
 
 void main()
 {
-	vec3 absPos = vec3(model * vec4(aPos, 1.0f));
-	vec3 curPos = absPos / 10000000.0f;
-	gl_Position = camMatrix * vec4(curPos, 1.0f);
-	Normal = normalMatrix * aNormal;
-	color = aColor;
-	texCoord = aTex;
+	curPos = vec3(model * vec4(aPos, 1.0f)) / 10000000.0f;
+	normal = normalMatrix * aNormal;
+	vec3 correctedPos = curPos;
+	gl_Position = camMatrix * vec4(correctedPos, 1.0f);
 
 	gl_PointSize = 10.0f;
 

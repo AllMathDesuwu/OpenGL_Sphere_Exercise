@@ -33,6 +33,42 @@
     <None Include="pointCloud.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="gBuffer.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="gBuffer.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="deferredShading.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="deferredShading.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="deferredLightSource.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="deferredLightSource.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="hdrRender.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="hdrRender.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="testQuad.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="testQuad.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="basicGShader.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="basicGShader.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EBO.cpp">
@@ -62,6 +98,24 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SimObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NumericMethods.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Sphere.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Quad.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EBO.h">
@@ -82,5 +136,46 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SimObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NumericMethods.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MathFunction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FBO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Quad.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="global_params.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="earth_tex.jpg">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="earth_tex.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="earth_tex2.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="moon_tex.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="test_tex.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

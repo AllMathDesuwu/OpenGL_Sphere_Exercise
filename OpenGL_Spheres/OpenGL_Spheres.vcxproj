@@ -71,12 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)/../_common_Libraries/include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)/../_common_Libraries/lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)/../../_common_Libraries/include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)/../../_common_Libraries/lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)/../_common_Libraries/include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)/../_common_Libraries/lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)/../../_common_Libraries/include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)/../../_common_Libraries/lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -137,17 +137,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="basicGShader.frag" />
+    <None Include="basicGShader.vert" />
     <None Include="default.frag" />
     <None Include="default.vert" />
+    <None Include="deferredLightSource.frag" />
+    <None Include="deferredLightSource.vert" />
+    <None Include="deferredShading.frag" />
+    <None Include="deferredShading.vert" />
+    <None Include="gBuffer.frag" />
+    <None Include="gBuffer.vert" />
+    <None Include="hdrRender.frag" />
+    <None Include="hdrRender.vert" />
     <None Include="pointCloud.frag" />
     <None Include="pointCloud.vert" />
+    <None Include="testQuad.frag" />
+    <None Include="testQuad.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="EBO.cpp" />
+    <ClCompile Include="FBO.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="NumericMethods.cpp" />
+    <ClCompile Include="Quad.cpp" />
     <ClCompile Include="shaderClass.cpp" />
+    <ClCompile Include="SimObject.cpp" />
+    <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="stb.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="VAO.cpp" />
@@ -156,10 +174,25 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="EBO.h" />
+    <ClInclude Include="FBO.h" />
+    <ClInclude Include="global_params.h" />
+    <ClInclude Include="Quad.h" />
+    <ClInclude Include="MathFunction.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="NumericMethods.h" />
     <ClInclude Include="shaderClass.h" />
+    <ClInclude Include="Sphere.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="VAO.h" />
     <ClInclude Include="VBO.h" />
+    <ClInclude Include="SimObject.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="earth_tex.jpg" />
+    <Image Include="earth_tex.png" />
+    <Image Include="earth_tex2.png" />
+    <Image Include="moon_tex.png" />
+    <Image Include="test_tex.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

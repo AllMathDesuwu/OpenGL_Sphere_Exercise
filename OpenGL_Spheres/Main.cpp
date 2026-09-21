@@ -1,17 +1,10 @@
+#include "global_params.h"
 #include <iostream>
 #include "cmath"
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <stb/stb_img.h>
-
-#include "shaderClass.h"
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
-#include "Camera.h"
-
-#define WIDTH 800
-#define HEIGHT 800
+#include "Mesh.h"
+#include "Sphere.h"
+#include "FBO.h"
+#include "Quad.h"
 
 void generateUVSphere(int numSectors, int numStacks, float radius, GLfloat* vertOut, GLuint* indxOut);
 void generateCircle(int numSectors, float radius, GLfloat* vertOut, GLuint* indxOut);
@@ -26,24 +19,6 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	//Using CORE profile (not legacy)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	//vertex coordinates
-	GLfloat vertices[] =
-	{
-		-0.5f, -0.5f * float(sqrt(3)) / 3,		0.0f,	0.8f, 0.3f,		0.02f,	0.0f, 0.0f,	//lower left
-		 0.5f, -0.5f * float(sqrt(3)) / 3,		0.0f,	0.8f, 0.3f,		0.02f,	0.0f, 0.0f,	//lower right
-		 0.0f,  0.5f * float(sqrt(3)) * 2 / 3,	0.0f,	1.0f, 0.6f,		0.32f,	0.0f, 0.0f,	//top
-		-0.25f, 0.5f * float(sqrt(3)) / 6,		0.0f,	0.9f, 0.45f,	0.17f,	0.0f, 0.0f,	//inner left
-		 0.25f, 0.5f * float(sqrt(3)) / 6,		0.0f,	0.9f, 0.45f,	0.17f,	0.0f, 0.0f,//inner right
-		 0.0f, -0.5f * float(sqrt(3)) / 3,		0.0f,	0.8f, 0.3f,		0.02f,	0.0f, 0.0f//inner bottom
-	};
-
-	GLuint indices[] =
-	{
-		0, 3, 5,	//lower left triangle
-		3, 2, 4,	//lower right triangle
-		5, 4, 1		//upper triangle
-	};
 
 	//Create a GLFWwindow object of 800x800 pixels naming it "Tutorial"
 	GLFWwindow* window = glfwCreateWindow(800, 800, "Tutorial", NULL, NULL);
@@ -66,111 +41,241 @@ int main() {
 	//Creates Shader object using shader files
 	Shader shaderProgram("default.vert", "default.frag");
 
-	//Generates Vertex Array Object and binds it
-	VAO VAO1;
-	VAO1.Bind();
+	std::vector<Texture> earthTexs;
+	Texture earthTex("earth_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
+	earthTexs.push_back(earthTex);
+	std::list<SimObject*> world;
+	Sphere earth(96, 96, 6371000.0f, earthTexs, (float)(5.972 * std::pow(10, 24)), world);
+	earth.Position = glm::vec3(0.0f, 0.0f, -10000000.0f);
 
-	//Generates Vertex Buffer Object and links it to vertices
-	VBO VBO1(vertices, sizeof(vertices));
-	//Gnerates Vertex Element Buffer Object and links it to indices
-	EBO EBO1(indices, sizeof(indices));
+	std::vector<Texture> moonTexs;
+	Texture moonTex("moon_tex.png", "diffuse", 0, GL_RGB, GL_UNSIGNED_BYTE);
+	moonTexs.push_back(moonTex);
+	Sphere moon(96, 96, 1737000.4f, moonTexs, (float)(7.346 * std::pow(10, 22)), world);
+	moon.Position = glm::vec3(384784000.0f, 0.0f, -10000000.0f);
+	moon.Velocity = glm::vec3(0.0f, 0.0f, 1017.8f);
 
-	//Links VBO to VAO
-	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	VAO1.LinkAttrib(VBO1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	//Unbind all to avoid accidentally changing them
-	VAO1.Unbind();
-	VBO1.Unbind();
-	EBO1.Unbind();
+	std::vector<Texture> testTexs;
+	Texture testTex("test_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
+	testTexs.push_back(testTex);
+	Sphere testLight(96, 96, 100000000.0f, testTexs, 0.0f, world, true);
+	testLight.Position = glm::vec3(384784000.0f, 100000.0f, 10000000.0f);
+	testLight.Velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+	testLight.SetLightParams(0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
-	Shader shaderProgram2("pointCloud.vert", "pointCloud.frag");
-
-	VAO VAO2;
-	VAO2.Bind();
-
-	const int NUM_STACKS = 24;
-	const int NUM_SECTORS = 24;
-	const int numVertices = (NUM_STACKS - 1) * NUM_SECTORS + 2;
-	const int numTris = 2 * (NUM_SECTORS) + (NUM_STACKS - 2) * (2 * NUM_SECTORS);	//first term is for the Northern and Southern-most sectors-- aka the ones that can be reprsented by a single triangle
-	//the second term represents the rest of the circles-- the ones that are squares and therefore require two triangles to represent them
-
-	GLfloat sphereVertexArray[numVertices * 3];
-	GLuint sphereIndexArray[numTris * 3];
-	generateUVSphere(NUM_SECTORS, NUM_STACKS, 1.0f, sphereVertexArray, sphereIndexArray);
-	VBO VBO2(sphereVertexArray, sizeof(sphereVertexArray));
-	EBO EBO2(sphereIndexArray, sizeof(sphereIndexArray));
-
-	/*for (int i = 0; i < numTris; i++) {
-		if ((i == NUM_SECTORS || (i - NUM_SECTORS) % (2 * NUM_SECTORS) == 0) && i != 0) {
-			std::cout << std::endl;
-		}
-		for (int j = 0; j < 3; j++) {
-			std::cout << sphereIndexArray[3 * i + j] << " ";
-		}
-		std::cout << std::endl;
-	}*/
-	std::cout << std::endl;
-	/*GLfloat circleVertices[NUM_SECTORS * 3];
-	generateCircle(NUM_SECTORS, 5.0f, circleVertices, NULL);
-	VBO VBO2(circleVertices, sizeof(circleVertices));*/
-
-	VAO2.LinkAttrib(VBO2, 0, 3, GL_FLOAT, 3 * sizeof(GLfloat), (void*)0);
-	VAO2.Unbind();
-	VBO2.Unbind();	
-	EBO2.Unbind();
-
-	GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
+	std::cout << "Num Lights: " << SimObject::lights.size() << std::endl;
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_PROGRAM_POINT_SIZE);
-	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 2.0f));
+	/*glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE, GL_ONE);*/
 
+	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 100.0f));
+
+	Shader shaderGeometryPass("gBuffer.vert", "gBuffer.frag");
+	Shader shaderDeferredPass("deferredShading.vert", "deferredShading.frag");
+	Shader shaderDeferredLights("deferredLightSource.vert", "deferredLightSource.frag");
+	Shader hdrRender("hdrRender.vert", "hdrRender.frag");
+	Shader basicGShader("basicGShader.vert", "basicGShader.frag");
+	Shader testRender("testQuad.vert", "testQuad.frag");
+
+	//std::cout << glGetError() << std::endl << std::endl;
+	FBO gBuff;
+	gBuff.AttachTexture(0, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);	//Position
+	gBuff.AttachTexture(1, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);	//Normal
+	gBuff.AttachTexture(2, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, NULL);		//Color + Specular
+	//gBuff.Bind();
+	gBuff.AttachRenderbuffer(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT);
+	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 , GL_COLOR_ATTACHMENT2};
+	gBuff.Bind();
+	glDrawBuffers(3, attachments);
+	gBuff.Unbind();
+	int code = glGetError();
+	if (code != 0) {
+		std::cout << "Error: " << code << std::endl;
+	}
+	else {
+		std::cout << "No errors making Framebuffer!" << std::endl;
+	}
+
+	gBuff.VerifyFramebuffer();
+	
+	//FBO ppBuffs[2];	//pp is for ping-pong...
+	//for (int i = 0; i < 2; i++) {
+	//	ppBuffs[i].AttachTexture(0, GL_RGBA16F, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	//}
+
+	//shaderDeferredPass.Activate();
+	/*glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gPosition"), 0);
+	glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gNormal"), 1);
+	glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gAlbedoSpec"), 2);*/
+	/*GLuint* gPosition = &(gBuff.texIDs[0]);
+	GLuint* gNormal = &(gBuff.texIDs[1]);
+	GLuint* gAlbedoSpec = &(gBuff.texIDs[2]);
+	shaderDeferredPass.Activate();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, *gPosition);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, *gNormal);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, *gAlbedoSpec);*/
+
+	Quad screenQuad;
+
+	float prevTime = (float) glfwGetTime();
+	float curTime;
+	float secCounter = 0;
 	//main while loop
 	while (!glfwWindowShouldClose(window)) {
+		curTime = glfwGetTime();
+		float deltaTime = curTime - prevTime;
+		secCounter += deltaTime;
+
 		//specify background color
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		//glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		//Clean the back buffer and assign the new color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	//clear front buffer
-		//Tell OpenGL which Shader Program to use
-		shaderProgram.Activate();
-		glUniform1f(uniID, 0.5f);
+
+		//beginning of geometry pass
+		gBuff.Bind();	//comment/uncomment this line to get diagnostic stuffs to appear...
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		camera.Inputs(window);
-		camera.Matrix(45.0f, 0.1f, 100.0f, shaderProgram, "camMatrix");
-		//Bind the VAO so OpenGL knows to use it
-		VAO1.Bind();
-		//Draw a triangle using the GL_TRIANGLES primitive
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
-		VAO1.Unbind();
+		camera.updateMatrix(45.0f, 0.1f, 1000.0f);
+		
+		earth.update(deltaTime);
+		earth.Draw(shaderGeometryPass, camera);
+		if (secCounter >= 1.0f) {
+			glm::vec3 diff = moon.Position - earth.Position;
+			std::cout << "Distance: " << std::sqrtf(glm::dot(diff, diff)) << std::endl;
+			std::cout << "Speed: " << std::sqrtf(glm::dot(moon.Velocity, moon.Velocity)) << std::endl;
+			/*std::cout << moon.Position.x << " " << moon.Position.y << " " << moon.Position.z << std::endl;
+			std::cout << moon.Velocity.x << " " << moon.Velocity.y << " " << moon.Velocity.z << std::endl;
+			std::cout << moon.Acceleration.x << " " << moon.Acceleration.y << " " << moon.Acceleration.z << std::endl;*/
+			//std::cout << std::sqrt(glm::dot(moon.SumOfForces, moon.SumOfForces)) << std::endl;
+			std::cout << std::endl;
 
-		shaderProgram2.Activate();
-		camera.Matrix(45.0f, 0.1f, 100.0f, shaderProgram2, "camMatrix");
-		VAO2.Bind();
-		//glDrawArrays(GL_POINTS, 0, numVertices);
-		glDrawElements(GL_TRIANGLES, numTris * 4, GL_UNSIGNED_INT, 0);
-		VAO2.Unbind();
+			secCounter -= 1.0f;
+		}
+		moon.update(deltaTime);
+		moon.Draw(shaderGeometryPass, camera);
 
+		testLight.Draw(shaderGeometryPass, camera);
+		gBuff.Unbind();
+
+		//goto end_of_render_cycle;
+
+		//lighting pass
+		gBuff.Unbind();	//bind to the default framebuffer
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		shaderDeferredPass.Activate();
+		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gPosition"), 0);
+		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gNormal"), 1);
+		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gAlbedoSpec"), 2);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(0));	//Position
+		//std::cout << gBuff.texIDs.at(0) << std::endl;
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(1));	//Normal
+		//std::cout << gBuff.texIDs.at(1) << std::endl;
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(2));	//Albedo + Spec
+		//std::cout << gBuff.texIDs.at(2) << std::endl;
+		// << std::endl;
+
+		//to appease the linter...
+		//const int MAX_LIGHTS = 1;
+		//int outerLim = (int)ceil(SimObject::lights.size() / ((float)MAX_LIGHTS));
+
+		////sanity check?
+		//goto end_of_render_cycle;	//this also has to be present for stuffs to appear...
+
+		//ppBuffs[0].Bind();
+		
+		auto lightIter = SimObject::lights.begin();
+		for (int j = 0; j < SimObject::lights.size(); j++) {
+			SimObject* curLight = *lightIter;
+			if (lightIter == SimObject::lights.end() || !curLight) break;
+			glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "numLights"), 1);
+
+			std::string prefix = "lights[" + std::to_string(j);
+
+			std::string pos = prefix + "].Position";
+			glUniform3f(glGetUniformLocation(shaderDeferredPass.ID, pos.c_str()), curLight->Position.x / 10000000.0f, curLight->Position.y / 10000000.0f, curLight->Position.z / 10000000.0f);
+			std::string color = prefix + "].Color";
+			glUniform3f(glGetUniformLocation(shaderDeferredPass.ID, color.c_str()), curLight->light.Color.x, curLight->light.Color.y, curLight->light.Color.z);
+			std::string linear = prefix + "].Linear";
+			glUniform1f(glGetUniformLocation(shaderDeferredPass.ID, linear.c_str()), curLight->light.Linear);
+			std::string quadratic = prefix + "].Quadratic";
+			glUniform1f(glGetUniformLocation(shaderDeferredPass.ID, quadratic.c_str()), curLight->light.Quadratic);
+
+			std::advance(lightIter, 1);
+		}
+		screenQuad.Draw();
+
+		/*for (int i = 0; i < outerLim; i++) {
+			int j;
+			for (j = 0; j < MAX_LIGHTS; j++) {
+				SimObject* curLight = *lightIter;
+				if (lightIter == SimObject::lights.end() || !curLight) break;
+				std::string prefix = "lights[" + std::to_string(j);
+
+				std::string pos = prefix + "].Position";
+				glUniform3f(glGetUniformLocation(shaderDeferredPass.ID, pos.c_str()), curLight->Position.x / 10000000.0f, curLight->Position.y / 10000000.0f, curLight->Position.z / 10000000.0f);
+				std::string color = prefix + "].Color";
+				glUniform3f(glGetUniformLocation(shaderDeferredPass.ID, color.c_str()), curLight->light.Color.x, curLight->light.Color.y, curLight->light.Color.z);
+				std::string linear = prefix + "].Linear";
+				glUniform1f(glGetUniformLocation(shaderDeferredPass.ID, linear.c_str()), curLight->light.Linear);
+				std::string quadratic = prefix + "].Quadratic";
+				glUniform1f(glGetUniformLocation(shaderDeferredPass.ID, quadratic.c_str()), curLight->light.Quadratic);
+
+				std::advance(lightIter, 1);
+			}
+			glUniform3f(glGetUniformLocation(shaderDeferredPass.ID, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
+			glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "numLights"), j + 1);
+			screenQuad.Draw();
+		}*/
+		gBuff.Unbind();
+		//ppBuffs[0].Unbind();
+
+		//Draw in your lights
+		//gBuff.Bind(GL_READ_FRAMEBUFFER);
+
+
+		//At this point you should start to ping pong to achieve bloom
+
+		//And then apply some kind of tonemapping for HDR so things can be reasonably rendered to screen
+
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		////hdrRender.Activate();
+		//testRender.Activate();
+		//glUniform1i(glGetUniformLocation(testRender.ID, "buff"), 0);
+		//glActiveTexture(GL_TEXTURE0);
+		////glBindTexture(GL_TEXTURE_2D, ppBuffs[0].texIDs[0]);
+		//glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(0));
+		////glUniform1i(glGetUniformLocation(hdrRender.ID, "hdrBuffer"), 0);
+		////glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 1.0);
+		//screenQuad.Draw();
+
+		end_of_render_cycle:
 		//swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 
 		//Take care of all GLFW events
 		glfwPollEvents();
 
-
+		prevTime = curTime;
 	}
 
 	//Delete the objects we've created
-	VAO1.Delete();
-	VBO1.Delete();
-	EBO1.Delete();
 	shaderProgram.Delete();
-
-	VAO2.Delete();
-	VBO2.Delete();
-	shaderProgram2.Delete();
-
+	shaderGeometryPass.Delete();
+	shaderDeferredPass.Delete();
+	shaderDeferredLights.Delete();
+	hdrRender.Delete();
+	testRender.Delete();
 	//Delete window before ending program
 	glfwDestroyWindow(window);
 	//Terminate GLFW before ending program

@@ -17,14 +17,16 @@ uniform mat3 normalMatrix;
 
 void main()
 {
-	vec3 absPos = vec3(model * vec4(aPos, 1.0f));
-	vec3 curPos = absPos / 10000000.0f;
-	gl_Position = camMatrix * vec4(curPos, 1.0f);
+	vec4 rawPos = (model * vec4(aPos, 1.0f));
+	vec4 correctedPos = vec4(rawPos.xyz / 10000000.0f, rawPos.w);
+	gl_Position = camMatrix * correctedPos;
+
+	curPos = correctedPos.xyz / correctedPos.w;
 	Normal = normalMatrix * aNormal;
 	color = aColor;
 	texCoord = aTex;
 
-	gl_PointSize = 10.0f;
+	//gl_PointSize = 10.0f;
 
 	pass_xz = vec2(aPos.x, aPos.z);
 }
