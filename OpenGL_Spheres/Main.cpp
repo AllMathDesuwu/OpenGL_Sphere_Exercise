@@ -91,15 +91,22 @@ int main() {
 	gBuff.Bind();
 	glDrawBuffers(3, attachments);
 	gBuff.Unbind();
-	int code = glGetError();
+	/*int code = glGetError();
 	if (code != 0) {
 		std::cout << "Error: " << code << std::endl;
 	}
 	else {
 		std::cout << "No errors making Framebuffer!" << std::endl;
-	}
-
+	}*/
 	gBuff.VerifyFramebuffer();
+
+	FBO hdrBuff;
+	hdrBuff.AttachTexture(2, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
+	unsigned int hdrAttachments[1] = {GL_COLOR_ATTACHMENT2};
+	hdrBuff.Bind();
+	glDrawBuffers(1, hdrAttachments);
+	hdrBuff.Unbind();
+	hdrBuff.VerifyFramebuffer();
 	
 	//FBO ppBuffs[2];	//pp is for ping-pong...
 	//for (int i = 0; i < 2; i++) {
@@ -168,7 +175,7 @@ int main() {
 		//goto end_of_render_cycle;
 
 		//lighting pass
-		gBuff.Unbind();	//bind to the default framebuffer
+		hdrBuff.Bind(); //begin collecting raw color values into HDR buff//gBuff.Unbind();	//bind to the default framebuffer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		shaderDeferredPass.Activate();
 		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gPosition"), 0);
@@ -237,7 +244,20 @@ int main() {
 			glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "numLights"), j + 1);
 			screenQuad.Draw();
 		}*/
-		gBuff.Unbind();
+		hdrBuff.Unbind();
+
+		//do post-processing for HDR
+		hdrBuff.Unbind();
+		//std::cout << glGetError() << std::endl;
+		glClear(GL_COLOR_BUFFER_BIT);
+		hdrRender.Activate(); 
+		glUniform1i(glGetUniformLocation(hdrRender.ID, "hdrBuffer"), 2);	//texture stored in slot 2
+		glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 2.0f);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, hdrBuff.texIDs.at(2));
+
+		screenQuad.Draw();
+		hdrBuff.Unbind();
 		//ppBuffs[0].Unbind();
 
 		//Draw in your lights

@@ -10,5 +10,5 @@ void main() {
 	vec3 hdrColor = texture(hdrBuffer, TexCoords).rgb;
 
 	vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
-	FragColor = vec4(hdrColor, 1.0f);
+	FragColor = vec4(mapped, 1.0f);
 }

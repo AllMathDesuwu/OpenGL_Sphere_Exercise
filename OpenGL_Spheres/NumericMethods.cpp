@@ -5,9 +5,11 @@
 glm::vec3 euler(SimObject& object, float deltaTime) {
 	float scaledTime = deltaTime * TIME_SCALE;
 
-	object.calcAndSetForces();
-	object.Velocity += object.Acceleration * scaledTime;
-	object.Position += object.Velocity * scaledTime;
+	for (int i = 0; i < 6; i++) {
+		object.calcAndSetForces();
+		object.Velocity += (1.0f / 6) * object.Acceleration * scaledTime;
+		object.Position += (1.0f / 6) * object.Velocity * scaledTime;
+	}
 	return object.Position;
 }
 
