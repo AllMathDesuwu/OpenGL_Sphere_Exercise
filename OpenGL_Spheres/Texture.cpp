@@ -8,7 +8,7 @@ Texture::Texture(const char* image, const char* texType, GLenum slot, GLenum for
 
 
 	glGenTextures(1, &ID);
-	glActiveTexture(slot);
+	glActiveTexture(GL_TEXTURE0 + slot);
 	glBindTexture(GL_TEXTURE_2D, ID);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -24,6 +24,7 @@ Texture::Texture(const char* image, const char* texType, GLenum slot, GLenum for
 	glBindTexture(GL_TEXTURE_2D, ID);
 }
 
+//Note to self: make this static???
 void Texture::texUnit(Shader& shader, const char* uniform, GLuint unit) {
 	GLuint texUni = glGetUniformLocation(shader.ID, uniform);
 	shader.Activate();

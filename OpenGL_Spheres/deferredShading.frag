@@ -19,7 +19,7 @@ const int MAX_LIGHTS = 1;	//max number of lights in a single iteration
 uniform Light lights[MAX_LIGHTS];
 uniform vec3 viewPos;
 
-const float AMBIENT = 0.05f;
+const float AMBIENT = 0.0005f;
 const float GAMMA = 2.2f;
 void main() {
 	vec3 FragPos = texture(gPosition, TexCoords).rgb;
@@ -36,7 +36,7 @@ void main() {
 		vec3 diffuse = max(dot(Normal, lightDir), 0.0f) * Diffuse * lights[i].Color;
 
 		vec3 halfwayDir = normalize(lightDir + viewDir);
-		float spec = pow(max(dot(Normal, halfwayDir), 0.0), 16.0);
+		float spec = pow(max(dot(Normal, halfwayDir), 0.0), 32.0);
 		vec3 specular = lights[i].Color * spec * Specular;
 
 		float distance = length(lights[i].Position - FragPos);

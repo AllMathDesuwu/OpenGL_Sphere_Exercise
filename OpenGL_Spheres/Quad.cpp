@@ -2,10 +2,10 @@
 #include <iostream>
 
 const Quad_Vertex Quad::quadVertices[] = {
-		Quad_Vertex{glm::vec3(-1.0f,  1.0f, 0.0f), glm::vec2(0.0f, 1.0f)},
-		Quad_Vertex{glm::vec3(-1.0f, -1.0f, 0.0f), glm::vec2(0.0f, 0.0f)},
-		Quad_Vertex{glm::vec3(1.0f,  1.0f, 0.0f), glm::vec2(1.0f, 1.0f)},
-		Quad_Vertex{glm::vec3(1.0f, -1.0f, 0.0f), glm::vec2(1.0f, 0.0f)}
+		Quad_Vertex{glm::vec3(-1.0f,  1.0f, 0.999999f), glm::vec2(0.0f, 1.0f)},	//this is jank as hell so probably gonna try to fix that soon
+		Quad_Vertex{glm::vec3(-1.0f, -1.0f, 0.999999f), glm::vec2(0.0f, 0.0f)},
+		Quad_Vertex{glm::vec3(1.0f,  1.0f, 0.999999f), glm::vec2(1.0f, 1.0f)},
+		Quad_Vertex{glm::vec3(1.0f, -1.0f, 0.999999f), glm::vec2(1.0f, 0.0f)}
 };
 
 Quad::Quad() {

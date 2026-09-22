@@ -101,10 +101,10 @@ int main() {
 	gBuff.VerifyFramebuffer();
 
 	FBO hdrBuff;
-	hdrBuff.AttachTexture(2, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
-	unsigned int hdrAttachments[1] = {GL_COLOR_ATTACHMENT2};
+	hdrBuff.AttachTexture(0, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
+	hdrBuff.AttachRenderbuffer(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT);
 	hdrBuff.Bind();
-	glDrawBuffers(1, hdrAttachments);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	hdrBuff.Unbind();
 	hdrBuff.VerifyFramebuffer();
 	
@@ -175,21 +175,20 @@ int main() {
 		//goto end_of_render_cycle;
 
 		//lighting pass
-		hdrBuff.Bind(); //begin collecting raw color values into HDR buff//gBuff.Unbind();	//bind to the default framebuffer
+		hdrBuff.Bind(); //begin collecting raw color values into HDR buff
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		shaderDeferredPass.Activate();
-		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gPosition"), 0);
-		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gNormal"), 1);
-		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gAlbedoSpec"), 2);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(0));	//Position
-		//std::cout << gBuff.texIDs.at(0) << std::endl;
+		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gPosition"), 0);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(1));	//Normal
-		//std::cout << gBuff.texIDs.at(1) << std::endl;
+		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gNormal"), 1);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(2));	//Albedo + Spec
+		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gAlbedoSpec"), 2);
 		//std::cout << gBuff.texIDs.at(2) << std::endl;
+		//glActiveTexture(GL_TEXTURE0);
 		// << std::endl;
 
 		//to appease the linter...
@@ -221,6 +220,14 @@ int main() {
 			std::advance(lightIter, 1);
 		}
 		screenQuad.Draw();
+		//risky stuff
+		shaderDeferredLights.Activate();
+		glBindTexture(GL_TEXTURE_2D, testTexs[0].ID);	//Position
+		glm::vec3 lightColor = testLight.light.Color;
+		glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
+		glActiveTexture(GL_TEXTURE0);
+		testLight.Draw(shaderDeferredLights, camera);	//draw the light source on top
+		//end risky stuff
 
 		/*for (int i = 0; i < outerLim; i++) {
 			int j;
@@ -251,10 +258,10 @@ int main() {
 		//std::cout << glGetError() << std::endl;
 		glClear(GL_COLOR_BUFFER_BIT);
 		hdrRender.Activate(); 
-		glUniform1i(glGetUniformLocation(hdrRender.ID, "hdrBuffer"), 2);	//texture stored in slot 2
+		glUniform1i(glGetUniformLocation(hdrRender.ID, "hdrBuffer"), 0);	//texture stored in 0th color attachment
 		glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 2.0f);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, hdrBuff.texIDs.at(2));
+		glActiveTexture(GL_TEXTURE0);	//probably works because textures attached to GL_TEXTURE0 by default???
+		glBindTexture(GL_TEXTURE_2D, hdrBuff.texIDs.at(0));
 
 		screenQuad.Draw();
 		hdrBuff.Unbind();

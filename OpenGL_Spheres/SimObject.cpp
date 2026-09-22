@@ -97,7 +97,7 @@ void SimObject::updateModel(Shader& shader) {
 }
 
 void SimObject::SetLightParams(float Linear, float Quadratic, glm::vec3 Color) {
-	SimObject::light.Linear = Linear;
-	SimObject::light.Quadratic = Linear;
-	SimObject::light.Color = Color;
+	this->light.Linear = Linear;
+	this->light.Quadratic = Linear;
+	this->light.Color = Color;
 }
