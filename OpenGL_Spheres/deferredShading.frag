@@ -17,10 +17,10 @@ struct Light {
 };
 uniform int numLights;
 const int MAX_LIGHTS = 1;	//max number of lights in a single iteration
-uniform Light lights[MAX_LIGHTS];
+uniform Light lights[2];	//well this is an issue... consider working on that 1D light texture soon
 uniform vec3 viewPos;
 
-const float AMBIENT = 0.0005f;
+const float AMBIENT = 0.5f;
 const float GAMMA = 2.2f;
 void main() {
 	vec3 FragPos = texture(gPosition, TexCoords).rgb;

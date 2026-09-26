@@ -48,6 +48,8 @@ void FBO::AttachTexture(GLuint texSlot, GLenum internalFormat, GLenum texFormat,
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, scrWidth, scrHeight, 0, texFormat, pixelDataType, data);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	//note to self: add an option to make setting this a function
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glFramebufferTexture2D(bindMode, GL_COLOR_ATTACHMENT0 + cap, GL_TEXTURE_2D, *texIDAddr, 0);
 	//std::cout << "Errors: " << glGetError() << std::endl;
 

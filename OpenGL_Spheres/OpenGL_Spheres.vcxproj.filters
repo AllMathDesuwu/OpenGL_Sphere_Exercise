@@ -69,6 +69,15 @@
     <None Include="basicGShader.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="extractColor.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="gauss_blur.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="bloomBlend.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EBO.cpp">
@@ -175,6 +184,9 @@
       <Filter>Resource Files\Textures</Filter>
     </Image>
     <Image Include="test_tex.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="white_tex.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
   </ItemGroup>

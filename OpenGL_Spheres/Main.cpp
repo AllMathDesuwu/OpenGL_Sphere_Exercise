@@ -66,6 +66,14 @@ int main() {
 	testLight.Velocity = glm::vec3(0.0f, 0.0f, 0.0f);
 	testLight.SetLightParams(5.0f, 0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
+	std::vector<Texture> solTexs;
+	Texture solTex("white_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
+	solTexs.push_back(solTex);
+	Sphere sol(96, 96, 1391400000.0f, solTexs, 0.0f, &world, true);
+	sol.Position = glm::vec3(0.0f, 0.0f, -149600000000.0f);
+	sol.Velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+	sol.SetLightParams(500.0f, 0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+
 	std::cout << "Num Lights: " << SimObject::lights.size() << std::endl;
 	std::cout << world.size() << std::endl;
 
@@ -83,6 +91,8 @@ int main() {
 	Shader shaderDeferredLights("deferredLightSource.vert", "deferredLightSource.frag");
 	Shader hdrRender("testQuad.vert", "hdrRender.frag");
 	Shader extractColor("testQuad.vert", "extractColor.frag");
+	Shader gaussBlur("testQuad.vert", "gauss_blur.frag");
+	Shader bloomBlend("testQuad.vert", "bloomBlend.frag");
 	Shader basicGShader("basicGShader.vert", "basicGShader.frag");
 	Shader testRender("testQuad.vert", "testQuad.frag");
 
@@ -143,6 +153,13 @@ int main() {
 		ppBuffs[i].VerifyFramebuffer();
 	}
 
+	FBO bloomBlendBuff;
+	bloomBlendBuff.AttachTexture(0, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
+	bloomBlendBuff.Bind();
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	bloomBlendBuff.Unbind();
+	bloomBlendBuff.VerifyFramebuffer();
+
 	//shaderDeferredPass.Activate();
 	/*glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gPosition"), 0);
 	glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gNormal"), 1);
@@ -180,7 +197,7 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		camera.Inputs(window);
-		camera.updateMatrix(45.0f, 0.1f, 1000.0f);
+		camera.updateMatrix(45.0f, 0.1f, 1000000.0f);
 		
 		earth.update(deltaTime);
 		earth.Draw(shaderGeometryPass, camera);
@@ -199,9 +216,7 @@ int main() {
 		moon.update(deltaTime);
 		moon.Draw(shaderGeometryPass, camera);
 
-		testLight.Draw(shaderGeometryPass, camera);
 		gBuff.Unbind();
-
 		//goto end_of_render_cycle;
 
 		//lighting pass
@@ -233,10 +248,10 @@ int main() {
 		//ppBuffs[0].Bind();
 		
 		auto lightIter = SimObject::lights.begin();	//note: consider storing lighting information inside of 1-D texture encoding light parameters instead of passing via uniform
+		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "numLights"), 2/*SimObject::lights.size()*/);
 		for (int j = 0; j < SimObject::lights.size(); j++) {
 			SimObject* curLight = *lightIter;
 			if (lightIter == SimObject::lights.end() || !curLight) break;
-			glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "numLights"), 1);
 
 			std::string prefix = "lights[" + std::to_string(j);
 
@@ -254,6 +269,11 @@ int main() {
 			std::advance(lightIter, 1);
 		}
 		screenQuad.Draw();
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuff.ID);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, lightingBuff.ID);
+		glBlitFramebuffer(0, 0, WIDTH, HEIGHT, 0, 0, WIDTH, HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);	//blit depth information into lighting buffer so lights aren't always drawn in front of quad (problematic for when objects pass in front of lights)
+		lightingBuff.Bind();
+
 		shaderDeferredLights.Activate();
 		glBindTexture(GL_TEXTURE_2D, testTexs[0].ID);	//Position
 		glm::vec3 lightColor = testLight.light.Color;
@@ -261,6 +281,13 @@ int main() {
 		glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
 		//glActiveTexture(GL_TEXTURE0);
 		testLight.Draw(shaderDeferredLights, camera);	//draw the light source on top
+
+		glBindTexture(GL_TEXTURE_2D, solTexs[0].ID);	//Position
+		lightColor = sol.light.Color;
+		glUniform1f(glGetUniformLocation(shaderDeferredLights.ID, "intensity"), sol.light.intensity);
+		glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
+		//glActiveTexture(GL_TEXTURE0);
+		sol.Draw(shaderDeferredLights, camera);	//draw the light source on top
 
 		/*for (int i = 0; i < outerLim; i++) {
 			int j;
@@ -296,6 +323,33 @@ int main() {
 		screenQuad.Draw();
 		extractColorBuff.Unbind();
 
+		bool horizontal = true;
+		int cycles = 5;
+		gaussBlur.Activate();
+		glActiveTexture(GL_TEXTURE0);
+		for (unsigned int i = 0; i < cycles * 2; i++) {
+			ppBuffs[horizontal].Bind();
+			glUniform1i(glGetUniformLocation(gaussBlur.ID, "horizontal"), horizontal);
+			glBindTexture(GL_TEXTURE_2D, i == 0 ? extractColorBuff.texIDs.at(1) : ppBuffs[!horizontal].texIDs.at(0));
+			screenQuad.Draw();
+
+			ppBuffs[horizontal].Unbind();
+			horizontal = !horizontal;
+		}
+
+		bloomBlendBuff.Bind();
+		glClear(GL_COLOR_BUFFER_BIT);
+		bloomBlend.Activate();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, extractColorBuff.texIDs.at(0));
+		glUniform1i(glGetUniformLocation(bloomBlend.ID, "scene"), 0);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ppBuffs[1].texIDs.at(0));
+		glUniform1i(glGetUniformLocation(bloomBlend.ID, "bloom"), 1);
+
+		screenQuad.Draw();
+		bloomBlendBuff.Unbind();
+
 		//do post-processing for HDR
 		//hdrBuff.Unbind();
 		hdrBuff.Bind();
@@ -303,9 +357,11 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 		hdrRender.Activate();
 		glActiveTexture(GL_TEXTURE0);	//probably works because textures attached to GL_TEXTURE0 by default???
-		glBindTexture(GL_TEXTURE_2D, extractColorBuff.texIDs.at(0));
+		//glBindTexture(GL_TEXTURE_2D, extractColorBuff.texIDs.at(0));
+		glBindTexture(GL_TEXTURE_2D, bloomBlendBuff.texIDs.at(0));
+		//glBindTexture(GL_TEXTURE_2D, ppBuffs[1].texIDs.at(0));
 		glUniform1i(glGetUniformLocation(hdrRender.ID, "hdrBuffer"), 0);	//texture stored in 0th color attachment //switch to 1 to see bright color
-		glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 0.75f);
+		glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 0.075f);
 
 		screenQuad.Draw();
 		//hdrBuff.Unbind();
@@ -357,6 +413,10 @@ int main() {
 	shaderDeferredPass.Delete();
 	shaderDeferredLights.Delete();
 	hdrRender.Delete();
+	extractColor.Delete();
+	gaussBlur.Delete();
+	bloomBlend.Delete();
+	basicGShader.Delete();
 	testRender.Delete();
 	//Delete window before ending program
 	glfwDestroyWindow(window);

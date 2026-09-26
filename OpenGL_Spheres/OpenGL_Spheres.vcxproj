@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -139,6 +139,7 @@
   <ItemGroup>
     <None Include="basicGShader.frag" />
     <None Include="basicGShader.vert" />
+    <None Include="bloomBlend.frag" />
     <None Include="default.frag" />
     <None Include="default.vert" />
     <None Include="deferredLightSource.frag" />
@@ -146,7 +147,7 @@
     <None Include="deferredShading.frag" />
     <None Include="deferredShading.vert" />
     <None Include="extractColor.frag" />
-    <None Include="extractColor.vert" />
+    <None Include="gauss_blur.frag" />
     <None Include="gBuffer.frag" />
     <None Include="gBuffer.vert" />
     <None Include="hdrRender.frag" />
@@ -195,6 +196,7 @@
     <Image Include="earth_tex2.png" />
     <Image Include="moon_tex.png" />
     <Image Include="test_tex.png" />
+    <Image Include="white_tex.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
