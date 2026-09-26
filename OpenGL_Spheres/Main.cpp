@@ -41,29 +41,33 @@ int main() {
 	//Creates Shader object using shader files
 	Shader shaderProgram("default.vert", "default.frag");
 
+	std::list<SimObject*> world;
+	std::cout << std::hex << "0x" << &(world) << std::endl;
+
 	std::vector<Texture> earthTexs;
 	Texture earthTex("earth_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
 	earthTexs.push_back(earthTex);
-	std::list<SimObject*> world;
-	Sphere earth(96, 96, 6371000.0f, earthTexs, (float)(5.972 * std::pow(10, 24)), world);
+	Sphere earth(96, 96, 6371000.0f, earthTexs, (float)(5.972 * std::pow(10, 24)), &world);
 	earth.Position = glm::vec3(0.0f, 0.0f, -10000000.0f);
+	earth.Velocity = glm::vec3(0.0f, 0.0f, -12.520f);
 
 	std::vector<Texture> moonTexs;
 	Texture moonTex("moon_tex.png", "diffuse", 0, GL_RGB, GL_UNSIGNED_BYTE);
 	moonTexs.push_back(moonTex);
-	Sphere moon(96, 96, 1737000.4f, moonTexs, (float)(7.346 * std::pow(10, 22)), world);
+	Sphere moon(96, 96, 1737000.4f, moonTexs, (float)(7.346 * std::pow(10, 22)), &world);
 	moon.Position = glm::vec3(384784000.0f, 0.0f, -10000000.0f);
 	moon.Velocity = glm::vec3(0.0f, 0.0f, 1017.8f);
 
 	std::vector<Texture> testTexs;
 	Texture testTex("test_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
 	testTexs.push_back(testTex);
-	Sphere testLight(96, 96, 100000000.0f, testTexs, 0.0f, world, true);
+	Sphere testLight(96, 96, 100000000.0f, testTexs, 0.0f, &world, true);
 	testLight.Position = glm::vec3(384784000.0f, 100000.0f, 10000000.0f);
 	testLight.Velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-	testLight.SetLightParams(0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	testLight.SetLightParams(5.0f, 0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	std::cout << "Num Lights: " << SimObject::lights.size() << std::endl;
+	std::cout << world.size() << std::endl;
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_PROGRAM_POINT_SIZE);
@@ -73,10 +77,12 @@ int main() {
 
 	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 100.0f));
 
+	//note that other than the geometry buffer and the deferred light source buffer, all post-processing uses pretty much the same vertex shader to render the screen quad
 	Shader shaderGeometryPass("gBuffer.vert", "gBuffer.frag");
-	Shader shaderDeferredPass("deferredShading.vert", "deferredShading.frag");
+	Shader shaderDeferredPass("testQuad.vert", "deferredShading.frag");
 	Shader shaderDeferredLights("deferredLightSource.vert", "deferredLightSource.frag");
-	Shader hdrRender("hdrRender.vert", "hdrRender.frag");
+	Shader hdrRender("testQuad.vert", "hdrRender.frag");
+	Shader extractColor("testQuad.vert", "extractColor.frag");
 	Shader basicGShader("basicGShader.vert", "basicGShader.frag");
 	Shader testRender("testQuad.vert", "testQuad.frag");
 
@@ -100,18 +106,42 @@ int main() {
 	}*/
 	gBuff.VerifyFramebuffer();
 
+	FBO lightingBuff;
+	lightingBuff.AttachTexture(0, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
+	lightingBuff.AttachRenderbuffer(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT);
+	lightingBuff.Bind();
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	lightingBuff.Unbind();
+	lightingBuff.VerifyFramebuffer();
+
 	FBO hdrBuff;
 	hdrBuff.AttachTexture(0, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
-	hdrBuff.AttachRenderbuffer(GL_DEPTH_COMPONENT, GL_DEPTH_ATTACHMENT);
 	hdrBuff.Bind();
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	hdrBuff.Unbind();
 	hdrBuff.VerifyFramebuffer();
-	
-	//FBO ppBuffs[2];	//pp is for ping-pong...
-	//for (int i = 0; i < 2; i++) {
-	//	ppBuffs[i].AttachTexture(0, GL_RGBA16F, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	//}
+
+	FBO extractColorBuff;
+	for (int i = 0; i < 2; i++) {
+		extractColorBuff.AttachTexture(i, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
+	}
+	unsigned int exColorAttachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	extractColorBuff.Bind();
+	glDrawBuffers(2, exColorAttachments);
+	extractColorBuff.Unbind();
+	extractColorBuff.VerifyFramebuffer();
+
+	FBO ppBuffs[2];	//pp is for ping-pong...
+	for (int i = 0; i < 2; i++) {
+		ppBuffs[i].AttachTexture(0, GL_RGB16F, GL_RGB, GL_FLOAT, NULL);
+		ppBuffs[i].Bind();
+		glBindTexture(GL_TEXTURE_2D, ppBuffs[i].texIDs[0]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		ppBuffs[i].Unbind();
+		ppBuffs[i].VerifyFramebuffer();
+	}
 
 	//shaderDeferredPass.Activate();
 	/*glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gPosition"), 0);
@@ -175,7 +205,7 @@ int main() {
 		//goto end_of_render_cycle;
 
 		//lighting pass
-		hdrBuff.Bind(); //begin collecting raw color values into HDR buff
+		lightingBuff.Bind(); //begin collecting raw color values for HDR post-processing in next step
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		shaderDeferredPass.Activate();
 		glActiveTexture(GL_TEXTURE0);
@@ -187,6 +217,8 @@ int main() {
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, gBuff.texIDs.at(2));	//Albedo + Spec
 		glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "gAlbedoSpec"), 2);
+
+		glActiveTexture(GL_TEXTURE0);
 		//std::cout << gBuff.texIDs.at(2) << std::endl;
 		//glActiveTexture(GL_TEXTURE0);
 		// << std::endl;
@@ -200,7 +232,7 @@ int main() {
 
 		//ppBuffs[0].Bind();
 		
-		auto lightIter = SimObject::lights.begin();
+		auto lightIter = SimObject::lights.begin();	//note: consider storing lighting information inside of 1-D texture encoding light parameters instead of passing via uniform
 		for (int j = 0; j < SimObject::lights.size(); j++) {
 			SimObject* curLight = *lightIter;
 			if (lightIter == SimObject::lights.end() || !curLight) break;
@@ -212,6 +244,8 @@ int main() {
 			glUniform3f(glGetUniformLocation(shaderDeferredPass.ID, pos.c_str()), curLight->Position.x / 10000000.0f, curLight->Position.y / 10000000.0f, curLight->Position.z / 10000000.0f);
 			std::string color = prefix + "].Color";
 			glUniform3f(glGetUniformLocation(shaderDeferredPass.ID, color.c_str()), curLight->light.Color.x, curLight->light.Color.y, curLight->light.Color.z);
+			std::string intensity = prefix + "].intensity";
+			glUniform1f(glGetUniformLocation(shaderDeferredPass.ID, intensity.c_str()), curLight->light.intensity);
 			std::string linear = prefix + "].Linear";
 			glUniform1f(glGetUniformLocation(shaderDeferredPass.ID, linear.c_str()), curLight->light.Linear);
 			std::string quadratic = prefix + "].Quadratic";
@@ -220,14 +254,13 @@ int main() {
 			std::advance(lightIter, 1);
 		}
 		screenQuad.Draw();
-		//risky stuff
 		shaderDeferredLights.Activate();
 		glBindTexture(GL_TEXTURE_2D, testTexs[0].ID);	//Position
 		glm::vec3 lightColor = testLight.light.Color;
+		glUniform1f(glGetUniformLocation(shaderDeferredLights.ID, "intensity"), testLight.light.intensity);
 		glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
-		glActiveTexture(GL_TEXTURE0);
+		//glActiveTexture(GL_TEXTURE0);
 		testLight.Draw(shaderDeferredLights, camera);	//draw the light source on top
-		//end risky stuff
 
 		/*for (int i = 0; i < outerLim; i++) {
 			int j;
@@ -251,17 +284,39 @@ int main() {
 			glUniform1i(glGetUniformLocation(shaderDeferredPass.ID, "numLights"), j + 1);
 			screenQuad.Draw();
 		}*/
-		hdrBuff.Unbind();
+		lightingBuff.Unbind();
+
+		extractColorBuff.Bind();
+		glClear(GL_COLOR_BUFFER_BIT);
+		extractColor.Activate();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, lightingBuff.texIDs.at(0));
+		glUniform1i(glGetUniformLocation(extractColor.ID, "colorBuff"), 0);
+
+		screenQuad.Draw();
+		extractColorBuff.Unbind();
 
 		//do post-processing for HDR
-		hdrBuff.Unbind();
+		//hdrBuff.Unbind();
+		hdrBuff.Bind();
 		//std::cout << glGetError() << std::endl;
 		glClear(GL_COLOR_BUFFER_BIT);
-		hdrRender.Activate(); 
-		glUniform1i(glGetUniformLocation(hdrRender.ID, "hdrBuffer"), 0);	//texture stored in 0th color attachment
-		glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 2.0f);
+		hdrRender.Activate();
 		glActiveTexture(GL_TEXTURE0);	//probably works because textures attached to GL_TEXTURE0 by default???
+		glBindTexture(GL_TEXTURE_2D, extractColorBuff.texIDs.at(0));
+		glUniform1i(glGetUniformLocation(hdrRender.ID, "hdrBuffer"), 0);	//texture stored in 0th color attachment //switch to 1 to see bright color
+		glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 0.75f);
+
+		screenQuad.Draw();
+		//hdrBuff.Unbind();
+		hdrBuff.Unbind();
+
+		hdrBuff.Unbind();	//note to self: might have to do bloom before HDR
+		glClear(GL_COLOR_BUFFER_BIT);
+		testRender.Activate();
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, hdrBuff.texIDs.at(0));
+		glUniform1i(glGetUniformLocation(testRender.ID, "buff"), 0);
 
 		screenQuad.Draw();
 		hdrBuff.Unbind();

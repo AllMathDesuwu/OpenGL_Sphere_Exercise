@@ -7,7 +7,7 @@
 #include "SimObject.h"
 #include <glm/glm.hpp>
 
-const float TIME_SCALE = 3600.0f * 24 * 7;
+const float TIME_SCALE = 3600.0f * 24 * 7 * 0.125;
 
 //TODO: Ask Yuanda how to do generic things in C++-- ideally would like to be able to provide a generic function that euler/rk4/etc is performed
 //with generic arguments provided to this function

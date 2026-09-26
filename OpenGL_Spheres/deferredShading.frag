@@ -11,6 +11,7 @@ struct Light {
 	vec3 Position;
 	vec3 Color;
 
+	float intensity;
 	float Linear;
 	float Quadratic;
 };
@@ -28,12 +29,11 @@ void main() {
     float Specular = texture(gAlbedoSpec, TexCoords).a;
 
 	vec3 lighting = Diffuse * AMBIENT;
-	vec3 viewDir = normalize(viewPos - FragPos);
+	vec3 viewDir = normalize(FragPos - viewPos);
 
-	float outVar;
 	for(int i = 0; i < numLights; i++) {
 		vec3 lightDir = normalize(lights[i].Position - FragPos);
-		vec3 diffuse = max(dot(Normal, lightDir), 0.0f) * Diffuse * lights[i].Color;
+		vec3 diffuse = max(dot(Normal, lightDir), 0.0f) * Diffuse * lights[i].intensity * lights[i].Color;
 
 		vec3 halfwayDir = normalize(lightDir + viewDir);
 		float spec = pow(max(dot(Normal, halfwayDir), 0.0), 32.0);
@@ -42,7 +42,6 @@ void main() {
 		float distance = length(lights[i].Position - FragPos);
 		float attenuation = 1.0 / (1.0 + distance * (lights[i].Linear + lights[i].Quadratic * distance));
 
-		outVar = 1.0 + (distance * (lights[i].Linear + lights[i].Quadratic * distance));
 		diffuse *= attenuation;
 		specular *= attenuation;
 

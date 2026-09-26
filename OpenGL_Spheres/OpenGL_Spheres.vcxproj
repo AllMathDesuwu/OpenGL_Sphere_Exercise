@@ -145,6 +145,8 @@
     <None Include="deferredLightSource.vert" />
     <None Include="deferredShading.frag" />
     <None Include="deferredShading.vert" />
+    <None Include="extractColor.frag" />
+    <None Include="extractColor.vert" />
     <None Include="gBuffer.frag" />
     <None Include="gBuffer.vert" />
     <None Include="hdrRender.frag" />

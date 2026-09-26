@@ -1,12 +1,12 @@
 #include "Camera.h"
 
 Camera::Camera(int width, int height, glm::vec3 position) {
-	Camera::width = width;
-	Camera::height = height;
+	this->width = width;
+	this->height = height;
 	Position = position;
 
-	Camera::prevTime = 0.0;
-	Camera::firstClick = true;
+	this->prevTime = 0.0;
+	this->firstClick = true;
 }
 
 void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane) {

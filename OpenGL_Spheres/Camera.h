@@ -20,7 +20,7 @@ public:
 	int width, height;
 
 	float speed = 1.0f;
-	float sensitivity = 10000.0f;
+	float sensitivity = 1000.0f;
 
 	double prevTime;
 

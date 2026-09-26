@@ -1,6 +1,6 @@
 #include "Sphere.h"
 
-Sphere::Sphere(int numSectors, int numStacks, float radius, std::vector<Texture>& textures, float mass, std::list<SimObject*>& world, bool addLight) : SimObject((std::vector<Vertex>&)Sphere::generateUVSphereVert(numSectors, numStacks, radius), (std::vector<GLuint>&)Sphere::generateUVSphereIdx(numSectors, numStacks), textures, mass, (std::list<SimObject*>&)world, addLight){
+Sphere::Sphere(int numSectors, int numStacks, float radius, std::vector<Texture>& textures, float mass, std::list<SimObject*>* world, bool addLight) : SimObject((std::vector<Vertex>&)Sphere::generateUVSphereVert(numSectors, numStacks, radius), (std::vector<GLuint>&)Sphere::generateUVSphereIdx(numSectors, numStacks), textures, mass, (std::list<SimObject*>*)world, addLight){
 	//TODO: consider mallocing these vectors
 	Sphere::radius = radius;
 
