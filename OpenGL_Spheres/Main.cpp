@@ -48,6 +48,7 @@ int main() {
 	Texture earthTex("earth_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
 	earthTexs.push_back(earthTex);
 	Sphere earth(96, 96, 6371000.0f, earthTexs, (float)(5.972 * std::pow(10, 24)), &world);
+	earth.Omega = glm::vec3(0.0f, 0.0041666f, 0.0f);
 	earth.Position = glm::vec3(0.0f, 0.0f, -10000000.0f);
 	earth.Velocity = glm::vec3(0.0f, 0.0f, -12.520f);
 
@@ -55,6 +56,8 @@ int main() {
 	Texture moonTex("moon_tex.png", "diffuse", 0, GL_RGB, GL_UNSIGNED_BYTE);
 	moonTexs.push_back(moonTex);
 	Sphere moon(96, 96, 1737000.4f, moonTexs, (float)(7.346 * std::pow(10, 22)), &world);
+	moon.Orientation = glm::vec3(0.0f, 180.0f, 0.0f);
+	moon.Omega = glm::vec3(0.0f, -0.000152625f, 0.0f);
 	moon.Position = glm::vec3(384784000.0f, 0.0f, -10000000.0f);
 	moon.Velocity = glm::vec3(0.0f, 0.0f, 1017.8f);
 
@@ -197,7 +200,7 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		camera.Inputs(window);
-		camera.updateMatrix(45.0f, 0.1f, 1000000.0f);
+		camera.updateMatrix(45.0f, 0.1f, 100000.0f);
 		
 		earth.update(deltaTime);
 		earth.Draw(shaderGeometryPass, camera);

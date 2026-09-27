@@ -79,16 +79,17 @@ glm::vec3 SimObject::calcForces(glm::vec3 offset) {
 
 void SimObject::update(float deltaTime) {
 	euler(*this, deltaTime);
+	this->Orientation += deltaTime * TIME_SCALE * Omega;
 }
 
 void SimObject::updateModel(Shader& shader) {
 	glm::mat4 model = glm::mat4(1.0f);
 	//chance for gimbal lock...
 	//also putting some ifs since for our case 99% of the time only the y component will be used
+	model = glm::translate(model, Position);
 	if (Orientation.x != 0) model = glm::rotate(model, glm::radians(Orientation.x), glm::vec3(1.0f, 0.0f, 0.0f));
 	if (Orientation.y != 0) model = glm::rotate(model, glm::radians(Orientation.y), glm::vec3(0.0f, 1.0f, 0.0f));
 	if (Orientation.z != 0) model = glm::rotate(model, glm::radians(Orientation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	model = glm::translate(model, Position);
 	glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
 	glm::mat3 normalMat = glm::mat3(1.0f);
@@ -99,13 +100,13 @@ void SimObject::updateModel(Shader& shader) {
 void SimObject::SetLightParams(float intensity, float Linear, float Quadratic, glm::vec3 Color) {
 	this->light.intensity = intensity;
 	this->light.Linear = Linear;
-	this->light.Quadratic = Linear;
+	this->light.Quadratic = Quadratic;
 	this->light.Color = Color;
 }
 
 void SimObject::SetLightParams(float Linear, float Quadratic, glm::vec3 Color) {
 	this->light.intensity = 1.0f;
 	this->light.Linear = Linear;
-	this->light.Quadratic = Linear;
+	this->light.Quadratic = Quadratic;
 	this->light.Color = Color;
 }
