@@ -42,39 +42,32 @@ int main() {
 	Shader shaderProgram("default.vert", "default.frag");
 
 	std::list<SimObject*> world;
-	std::cout << std::hex << "0x" << &(world) << std::endl;
 
 	std::vector<Texture> earthTexs;
 	Texture earthTex("earth_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
 	earthTexs.push_back(earthTex);
 	Sphere earth(96, 96, 6371000.0f, earthTexs, (float)(5.972 * std::pow(10, 24)), &world);
-	earth.Omega = glm::vec3(0.0f, 0.0041666f, 0.0f);
-	earth.Position = glm::vec3(0.0f, 0.0f, -10000000.0f);
-	earth.Velocity = glm::vec3(0.0f, 0.0f, -12.520f);
+	earth.InitialConditions(/*Position*/glm::vec3(0.0f, 0.0f, -10000000.0f), /*Velocity*/glm::vec3(29780.0f, 0.0f, -12.520f), /*Acceleration*/glm::vec3(0.0f, 0.0f, 0.0f), /*Orientation*/glm::vec3(23.5f, 0.0f, 0.0f), /*Omega*/glm::vec3(0.0f, 0.0041666f, 0.0f));	
 
 	std::vector<Texture> moonTexs;
 	Texture moonTex("moon_tex.png", "diffuse", 0, GL_RGB, GL_UNSIGNED_BYTE);
 	moonTexs.push_back(moonTex);
 	Sphere moon(96, 96, 1737000.4f, moonTexs, (float)(7.346 * std::pow(10, 22)), &world);
-	moon.Orientation = glm::vec3(0.0f, 180.0f, 0.0f);
-	moon.Omega = glm::vec3(0.0f, -0.000152625f, 0.0f);
-	moon.Position = glm::vec3(384784000.0f, 0.0f, -10000000.0f);
-	moon.Velocity = glm::vec3(0.0f, 0.0f, 1017.8f);
+	moon.InitialConditions(/*Position*/glm::vec3(384784000.0f, 0.0f, -10000000.0f), /*Velocity*/glm::vec3(29780.0f, 0.0f, 1017.8f), /*Acceleration*/glm::vec3(0.0f, 0.0f, 0.0f), /*Orientation*/glm::vec3(0.0f, 180.0f, 0.0f), /*Omega*/glm::vec3(0.0f, -0.000152625f, 0.0f));
 
-	std::vector<Texture> testTexs;
+	/*std::vector<Texture> testTexs;
 	Texture testTex("test_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
 	testTexs.push_back(testTex);
 	Sphere testLight(96, 96, 100000000.0f, testTexs, 0.0f, &world, true);
 	testLight.Position = glm::vec3(384784000.0f, 100000.0f, 10000000.0f);
 	testLight.Velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-	testLight.SetLightParams(5.0f, 0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+	testLight.SetLightParams(5.0f, 0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));*/
 
 	std::vector<Texture> solTexs;
 	Texture solTex("white_tex.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE);
 	solTexs.push_back(solTex);
-	Sphere sol(96, 96, 1391400000.0f, solTexs, 0.0f, &world, true);
-	sol.Position = glm::vec3(0.0f, 0.0f, -149600000000.0f);
-	sol.Velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+	Sphere sol(96, 96, 1391400000.0f / 2, solTexs, (float)(1.9885 * std::pow(10, 30)), &world, true);
+	sol.InitialConditions(/*Position*/glm::vec3(0.0f, 0.0f, -149600000000.0f), /*Velocity*/glm::vec3(0.0f, 0.0f, 0.0f), /*Acceleration*/glm::vec3(0.0f, 0.0f, 0.0f), /*Orientation*/glm::vec3(0.0f, 0.0f, 0.0f), /*Omega*/glm::vec3(0.0f, 0.0f, 0.0f));
 	sol.SetLightParams(500.0f, 0.0f, 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	std::cout << "Num Lights: " << SimObject::lights.size() << std::endl;
@@ -184,9 +177,11 @@ int main() {
 	float curTime;
 	float secCounter = 0;
 	//main while loop
+	float minFrameTime = 1.0f / 60;	//caps framerate-- hopefully addresses jittering
 	while (!glfwWindowShouldClose(window)) {
-		curTime = glfwGetTime();
+		curTime = (float)glfwGetTime();
 		float deltaTime = curTime - prevTime;
+		if (deltaTime < minFrameTime) continue;
 		secCounter += deltaTime;
 
 		//specify background color
@@ -198,11 +193,8 @@ int main() {
 		//beginning of geometry pass
 		gBuff.Bind();	//comment/uncomment this line to get diagnostic stuffs to appear...
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		camera.Inputs(window);
-		camera.updateMatrix(45.0f, 0.1f, 100000.0f);
 		
-		earth.update(deltaTime);
+		earth.update(deltaTime);	//note: add a field to each object for "old" position so that frame updates are consistent... currently, calculations somewhat depend on the order objects get updated
 		earth.Draw(shaderGeometryPass, camera);
 		if (secCounter >= 1.0f) {
 			glm::vec3 diff = moon.Position - earth.Position;
@@ -219,8 +211,15 @@ int main() {
 		moon.update(deltaTime);
 		moon.Draw(shaderGeometryPass, camera);
 
+		SimObject::updatePrevPosition(&world);
+
 		gBuff.Unbind();
 		//goto end_of_render_cycle;
+
+		camera.Inputs(window);
+		camera.setAnchor(&earth.Position);
+		//NOTE: make sure to include in a header file somewhere the 1:10^7 scale factor
+		camera.updateMatrix(45.0f, 0.1f, 100000.0f);
 
 		//lighting pass
 		lightingBuff.Bind(); //begin collecting raw color values for HDR post-processing in next step
@@ -278,17 +277,17 @@ int main() {
 		lightingBuff.Bind();
 
 		shaderDeferredLights.Activate();
-		glBindTexture(GL_TEXTURE_2D, testTexs[0].ID);	//Position
-		glm::vec3 lightColor = testLight.light.Color;
-		glUniform1f(glGetUniformLocation(shaderDeferredLights.ID, "intensity"), testLight.light.intensity);
-		glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
-		//glActiveTexture(GL_TEXTURE0);
-		testLight.Draw(shaderDeferredLights, camera);	//draw the light source on top
+		//glBindTexture(GL_TEXTURE_2D, testTexs[0].ID);	//Position
+		//glm::vec3 lightColor = testLight.light.Color;
+		//glUniform1f(glGetUniformLocation(shaderDeferredLights.ID, "intensity"), testLight.light.intensity);
+		//glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
+		////glActiveTexture(GL_TEXTURE0);
+		//testLight.Draw(shaderDeferredLights, camera);	//draw the light source on top
 
 		glBindTexture(GL_TEXTURE_2D, solTexs[0].ID);	//Position
-		lightColor = sol.light.Color;
+		glm::vec3 solLightColor = sol.light.Color;
 		glUniform1f(glGetUniformLocation(shaderDeferredLights.ID, "intensity"), sol.light.intensity);
-		glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
+		glUniform3f(glGetUniformLocation(shaderDeferredLights.ID, "lightColor"), solLightColor.r, solLightColor.g, solLightColor.b);
 		//glActiveTexture(GL_TEXTURE0);
 		sol.Draw(shaderDeferredLights, camera);	//draw the light source on top
 
@@ -330,7 +329,7 @@ int main() {
 		int cycles = 5;
 		gaussBlur.Activate();
 		glActiveTexture(GL_TEXTURE0);
-		for (unsigned int i = 0; i < cycles * 2; i++) {
+		for (int i = 0; i < cycles * 2; i++) {
 			ppBuffs[horizontal].Bind();
 			glUniform1i(glGetUniformLocation(gaussBlur.ID, "horizontal"), horizontal);
 			glBindTexture(GL_TEXTURE_2D, i == 0 ? extractColorBuff.texIDs.at(1) : ppBuffs[!horizontal].texIDs.at(0));
@@ -400,7 +399,7 @@ int main() {
 		////glUniform1f(glGetUniformLocation(hdrRender.ID, "exposure"), 1.0);
 		//screenQuad.Draw();
 
-		end_of_render_cycle:
+		//end_of_render_cycle:
 		//swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 
@@ -429,7 +428,7 @@ int main() {
 }
 
 void generateUVSphere(int numSectors, int numStacks, float radius, GLfloat* vertOut, GLuint* indxOut) {
-	const double pi = 2 * acos(0.0);
+	const float pi = 2 * (float)acos(0.0);
 
 	int  index = 0;	//index counts position in array (divide by three gives vertex), subindex gives x, y, or z
 	for (int i = 0; i <= numStacks; i++) {	//number of vertical units
@@ -510,7 +509,7 @@ void generateUVSphere(int numSectors, int numStacks, float radius, GLfloat* vert
 //testing my understanding of math to debug the above...
 //turns out I did attribute linking to the wrong VBO... oops
 void generateCircle(int numSectors, float radius, GLfloat* vertOut, GLuint* indxOut) {
-	const double pi = 2 * acos(0.0);
+	const float pi = 2 * (float)acos(0.0);
 
 	int  index = 0;	//index counts position in array (divide by three gives vertex), subindex gives x, y, or z
 	for (int j = 0; j < numSectors; j++) {

@@ -12,6 +12,7 @@ glm::vec3 euler(SimObject& object, float deltaTime) {
 		object.Velocity += (1.0f / iters) * object.Acceleration * scaledTime;
 		object.Position += (1.0f / iters) * object.Velocity * scaledTime;
 	}
+
 	return object.Position;
 }
 

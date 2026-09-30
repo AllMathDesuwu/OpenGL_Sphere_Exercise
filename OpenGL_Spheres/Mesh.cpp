@@ -53,7 +53,7 @@ void Mesh::Draw(Shader& shader, Camera& camera) {
 		textures[i].texUnit(shader, (type + num).c_str(), i);
 		textures[i].Bind();
 	}
-	glUniform3f(glGetUniformLocation(shader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
+	glUniform3f(glGetUniformLocation(shader.ID, "camPos"), camera.RelPosition.x, camera.RelPosition.y, camera.RelPosition.z);
 	camera.Matrix(shader, "camMatrix");
 
 	updateModel(shader);
@@ -65,4 +65,8 @@ void Mesh::updateModel(Shader& shader) {
 	glm::mat4 model = glm::mat4(1.0f);
 	//model = glm::translate(model, Position);
 	glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
+}
+
+void Mesh::Delete() {
+	VAO.Delete();
 }

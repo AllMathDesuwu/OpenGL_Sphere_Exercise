@@ -4,7 +4,7 @@
 #include <vector>
 #include "SimObject.h"
 
-const double pi = 2 * acos(0.0);
+const float pi = 2 * (float)acos(0.0);
 
 class Sphere : public SimObject {
 public:
